@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10-Second Survival</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rot-black:#0b0f0a;
+    --rot-dark:#131a10;
+    --rot-panel:#1b2417;
+    --rot-line:#2e3b26;
+    --bone:#e8e2d0;
+    --bone-dim:#a8a290;
+    --blood:#b6231f;
+    --blood-bright:#e0403a;
+    --toxic:#7fa63f;
+    --toxic-dim:#4f6b2b;
+    --gold:#d4af37;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;width:100%;height:100%;overflow:hidden;
+    background:var(--rot-black);
+    font-family:'Special Elite',monospace;
+    color:var(--bone);
+  }
+  #game{
+    position:absolute;top:0;left:0;
+    width:100%;height:100%;
+    display:block;
+    background:var(--rot-black);
+    touch-action:none;
+  }
+  .display{ font-family:'Creepster',cursive; letter-spacing:1px; }
+
+  .screen{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+    background:radial-gradient(ellipse at center, rgba(19,26,16,0.92) 0%, rgba(7,10,6,0.97) 100%);
+    z-index:10;
+    padding:20px;
+  }
+  .hidden{ display:none !important; }
+
+  .title{
+    font-size:clamp(38px,8vw,72px);
+    color:var(--blood-bright);
+    text-shadow:0 0 12px rgba(182,35,31,0.6), 3px 3px 0 #000;
+    margin:0 0 4px 0;
+    text-align:center;
+  }
+  .subtitle{
+    color:var(--bone-dim);
+    font-size:14px;
+    margin-bottom:28px;
+    text-align:center;
+    max-width:420px;
+    line-height:1.5;
+  }
+
+  .menu-stats{
+    display:flex; gap:22px; margin-bottom:22px;
+    font-size:13px; color:var(--bone-dim);
+  }
+  .menu-stats span b{ color:var(--gold); }
+  .menu-stats span.time b{ color:var(--toxic); }
+
+  .btn{
+    font-family:'Special Elite',monospace;
+    background:var(--rot-panel);
+    border:2px solid var(--rot-line);
+    color:var(--bone);
+    padding:14px 34px;
+    font-size:16px;
+    cursor:pointer;
+    margin:6px;
+    min-width:220px;
+    letter-spacing:1px;
+    transition:transform .08s ease, border-color .15s ease, background .15s ease;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  }
+  .btn:hover{ border-color:var(--blood); background:#212b1c; transform:translateY(-2px); }
+  .btn:active{ transform:translateY(0px); }
+  .btn.primary{ border-color:var(--blood); color:var(--bone); }
+  .btn.primary:hover{ background:#2a1614; }
+  .btn.gold{ border-color:var(--gold); }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; transform:none; }
+
+  .btn-row{ display:flex; flex-wrap:wrap; justify-content:center; }
+
+  /* SHOP */
+  .shop-panel{
+    width:min(880px,92vw);
+    max-height:86vh;
+    overflow-y:auto;
+    background:var(--rot-dark);
+    border:2px solid var(--rot-line);
+    padding:22px 26px;
+  }
+  .shop-section-title{
+    font-family:'Creepster',cursive;
+    color:var(--toxic);
+    font-size:24px;
+    margin:18px 0 10px 0;
+    border-bottom:1px solid var(--rot-line);
+    padding-bottom:6px;
+  }
+  .shop-section-title:first-child{ margin-top:0; }
+
+  .skin-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;
+  }
+  .skin-card{
+    background:var(--rot-panel);
+    border:2px solid var(--rot-line);
+    padding:12px;
+    text-align:center;
+  }
+  .skin-card.equipped{ border-color:var(--toxic); }
+  .skin-icon{
+    width:56px;height:56px;margin:0 auto 8px auto;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;
+  }
+  .skin-name{ font-size:14px; margin-bottom:2px; }
+  .skin-desc{ font-size:11px; color:var(--bone-dim); min-height:30px; margin-bottom:8px; line-height:1.4; }
+  .skin-price{ font-size:12px; color:var(--gold); margin-bottom:8px; }
+  .small-btn{
+    font-family:'Special Elite',monospace;
+    background:var(--rot-line); border:1px solid #3d4c33; color:var(--bone);
+    padding:6px 14px; font-size:12px; cursor:pointer; width:100%;
+  }
+  .small-btn:hover{ background:#3d4c33; }
+  .small-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .small-btn.equipped-tag{ background:var(--toxic-dim); border-color:var(--toxic); cursor:default; }
+
+  .upgrade-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--rot-panel); border:1px solid var(--rot-line);
+    padding:12px 16px; margin-bottom:10px;
+  }
+  .upgrade-info{ text-align:left; }
+  .upgrade-info .u-name{ font-size:14px; margin-bottom:3px; }
+  .upgrade-info .u-desc{ font-size:11px; color:var(--bone-dim); }
+  .upgrade-buy{ text-align:right; min-width:110px; }
+  .upgrade-buy .u-price{ font-size:12px; color:var(--gold); margin-bottom:6px; }
+
+  /* HUD */
+  #hud{
+    position:absolute; inset:0; pointer-events:none; z-index:5;
+  }
+  #topBar{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:14px 18px;
+  }
+  #timerBox{
+    font-family:'Creepster',cursive;
+    font-size:34px;
+    color:var(--bone);
+    text-shadow:2px 2px 0 #000;
+  }
+  #timerBox.danger{ color:var(--blood-bright); }
+  #goldRun{ font-size:12px; color:var(--gold); margin-top:2px; }
+
+  #barsWrap{ position:absolute; bottom:16px; left:50%; transform:translateX(-50%); width:min(480px,90vw); }
+  .bar-track{
+    width:100%; height:14px; background:#000; border:1px solid var(--rot-line);
+    margin-bottom:6px; position:relative;
+  }
+  .bar-fill{ height:100%; transition:width .15s ease; }
+  #hpFill{ background:linear-gradient(90deg,#5c1512,var(--blood)); }
+  #xpFill{ background:linear-gradient(90deg,var(--toxic-dim),var(--toxic)); }
+  .bar-label{ font-size:10px; color:var(--bone-dim); text-align:center; margin-bottom:2px; }
+
+  #levelBadge{
+    position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
+    font-family:'Creepster',cursive; font-size:16px; color:var(--gold);
+  }
+
+  /* LEVEL UP */
+  #levelUpScreen{ z-index:20; }
+  .card-row{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; max-width:900px; }
+  .upgrade-card{
+    width:220px; min-height:180px;
+    background:var(--rot-panel); border:2px solid var(--rot-line);
+    padding:18px 14px; cursor:pointer; text-align:center;
+    display:flex; flex-direction:column; justify-content:space-between;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .upgrade-card:hover{ border-color:var(--toxic); transform:translateY(-4px); }
+  .card-icon{ font-size:36px; margin-bottom:10px; }
+  .card-title{ font-size:15px; margin-bottom:8px; color:var(--bone); }
+  .card-tag{ font-size:10px; letter-spacing:1px; color:var(--bone-dim); margin-bottom:8px; }
+  .card-desc{ font-size:12px; color:var(--bone-dim); line-height:1.4; }
+
+  .taunt{ font-size:13px; color:var(--blood-bright); margin:6px 0 20px 0; font-style:italic; text-align:center; max-width:400px; }
+
+  #note{
+    position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+    font-size:10px; color:var(--bone-dim); opacity:.5; z-index:6; text-align:center; width:90%;
+  }
+
+  /* Touch joystick */
+  #joystickZone{
+    position:absolute;
+    left:0; bottom:0;
+    width:45vw; height:45vh;
+    max-width:320px; max-height:320px;
+    pointer-events:auto;
+    touch-action:none;
+    z-index:7;
+  }
+  #joyBase{
+    position:absolute;
+    width:110px; height:110px;
+    border-radius:50%;
+    background:rgba(232,226,208,0.08);
+    border:2px solid rgba(232,226,208,0.25);
+    left:30px; bottom:30px;
+    display:none;
+  }
+  #joyKnob{
+    position:absolute;
+    width:50px; height:50px;
+    border-radius:50%;
+    background:rgba(182,35,31,0.55);
+    border:2px solid rgba(232,226,208,0.5);
+    left:30px; top:30px;
+    transform:translate(0,0);
+  }
+  body.touch-active #joyBase{ display:block; }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div id="note">Progress (gold, best time, skins, upgrades) is saved in this browser only. WASD / Arrow Keys to move, or touch/drag the bottom-left of the screen on mobile — attacks are automatic.</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="topBar">
+    <div>
+      <div id="timerBox">0.0s</div>
+      <div id="goldRun">Gold this run: 0</div>
+    </div>
+    <div id="levelBadgeTop" style="font-family:'Creepster',cursive;font-size:20px;color:var(--gold);">Lv.1</div>
+  </div>
+  <div id="barsWrap">
+    <div class="bar-label" id="xpLabel">XP: 0 / 5</div>
+    <div class="bar-track"><div class="bar-fill" id="xpFill" style="width:0%"></div></div>
+    <div class="bar-label" id="hpLabel">HP: 100 / 100</div>
+    <div class="bar-track"><div class="bar-fill" id="hpFill" style="width:100%"></div></div>
+  </div>
+  <div id="joystickZone">
+    <div id="joyBase"><div id="joyKnob"></div></div>
+  </div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="menuScreen" class="screen">
+  <h1 class="title display">10-SECOND SURVIVAL</h1>
+  <p class="subtitle">The Rift never lets anything live past ten seconds. Level up, buy upgrades, prove it wrong. It will not go well.</p>
+  <div class="menu-stats">
+    <span>Gold: <b id="menuGold">0</b></span>
+    <span class="time">Best Time: <b id="menuBest">0.0s</b></span>
+  </div>
+  <div class="btn-row">
+    <button class="btn primary" id="btnPlay">Enter The Arena</button>
+    <button class="btn gold" id="btnShop">Shop</button>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div id="shopScreen" class="screen hidden">
+  <div class="shop-panel">
+    <h2 class="title display" style="font-size:32px;">THE SHOP</h2>
+    <div style="text-align:center;color:var(--gold);font-size:13px;margin-bottom:10px;">Gold: <b id="shopGold">0</b></div>
+
+    <div class="shop-section-title">Skins</div>
+    <div class="skin-grid" id="skinGrid"></div>
+
+    <div class="shop-section-title">Permanent Upgrades</div>
+    <div id="upgradeList"></div>
+
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn" id="btnBackMenu">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEVEL UP -->
+<div id="levelUpScreen" class="screen hidden">
+  <h2 class="title display" style="font-size:30px;">LEVEL UP</h2>
+  <div class="card-row" id="cardRow"></div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameOverScreen" class="screen hidden">
+  <h1 class="title display" style="font-size:46px;">CONSUMED</h1>
+  <p class="taunt" id="taunt"></p>
+  <div class="menu-stats">
+    <span class="time">Survived: <b id="finalTime">0.0s</b></span>
+    <span>Gold Earned: <b id="finalGold">0</b></span>
+    <span class="time">Best: <b id="finalBest">0.0s</b></span>
+  </div>
+  <div class="btn-row">
+    <button class="btn primary" id="btnRetry">Try Again</button>
+    <button class="btn gold" id="btnShop2">Shop</button>
+    <button class="btn" id="btnMenu2">Main Menu</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ---------- Persistence ----------
+const SAVE_KEY = "tss_save_v1";
+function defaultSave(){
+  return {
+    gold: 0,
+    bestTime: 0,
+    equippedSkin: "knight",
+    ownedSkins: ["knight"],
+    upgrades: { hp:0, magnet:0, goldgain:0 }
+  };
+}
+let save = defaultSave();
+try{
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(raw) save = Object.assign(defaultSave(), JSON.parse(raw));
+}catch(e){ /* storage unavailable, play without persistence */ }
+function persist(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+}
+
+// ---------- Skins ----------
+const SKINS = {
+  knight:      { name:"Knight",      cost:0,   color:"#8fa3b0", icon:"🛡️", desc:"+20% HP, -10% speed", hpMult:1.2, speedMult:0.9, powerMult:1, critBonus:0 },
+  mage:        { name:"Mage",        cost:120, color:"#7a5fc4", icon:"🔮", desc:"+25% power, -15% HP", hpMult:0.85, speedMult:1, powerMult:1.25, critBonus:0 },
+  rogue:       { name:"Rogue",       cost:150, color:"#3c8f5c", icon:"🗡️", desc:"+20% speed, +15% crit", hpMult:0.95, speedMult:1.2, powerMult:1, critBonus:0.15 },
+  berserker:   { name:"Berserker",   cost:220, color:"#b6231f", icon:"🪓", desc:"+35% power, -20% HP", hpMult:0.8, speedMult:1.05, powerMult:1.35, critBonus:0 },
+  necromancer: { name:"Necromancer", cost:300, color:"#4a4f2e", icon:"💀", desc:"+30% magnet, balanced stats", hpMult:1, speedMult:1, powerMult:1.05, critBonus:0.05, magnetMult:1.6 }
+};
+
+// ---------- Permanent Upgrades ----------
+const UPGRADE_DEFS = {
+  hp:      { name:"Vitality",     desc:"+5% max HP per rank",        base:40, growth:1.35, max:10 },
+  magnet:  { name:"Magnet Range", desc:"+8% gem pickup range/rank",  base:35, growth:1.3,  max:10 },
+  goldgain:{ name:"Gold Gain",    desc:"+10% gold earned per rank",  base:50, growth:1.3,  max:10 }
+};
+function upgradeCost(key){
+  const d = UPGRADE_DEFS[key];
+  const rank = save.upgrades[key];
+  return Math.round(d.base * Math.pow(d.growth, rank));
+}
+
+// ---------- Canvas setup ----------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+document.addEventListener('touchmove', e=>{ e.preventDefault(); }, {passive:false});
+
+// ---------- UI refs ----------
+const hud = document.getElementById('hud');
+const menuScreen = document.getElementById('menuScreen');
+const shopScreen = document.getElementById('shopScreen');
+const levelUpScreen = document.getElementById('levelUpScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+
+function showOnly(el){
+  [menuScreen, shopScreen, levelUpScreen, gameOverScreen].forEach(s=> s.classList.add('hidden'));
+  if(el) el.classList.remove('hidden');
+}
+
+function refreshMenu(){
+  document.getElementById('menuGold').textContent = save.gold;
+  document.getElementById('menuBest').textContent = save.bestTime.toFixed(1)+"s";
+}
+
+// ---------- Shop rendering ----------
+function renderShop(){
+  document.getElementById('shopGold').textContent = save.gold;
+  const grid = document.getElementById('skinGrid');
+  grid.innerHTML = "";
+  Object.keys(SKINS).forEach(key=>{
+    const s = SKINS[key];
+    const owned = save.ownedSkins.includes(key);
+    const equipped = save.equippedSkin === key;
+    const card = document.createElement('div');
+    card.className = 'skin-card' + (equipped ? ' equipped':'');
+    card.innerHTML = `
+      <div class="skin-icon" style="background:${s.color}33;border:2px solid ${s.color};">${s.icon}</div>
+      <div class="skin-name">${s.name}</div>
+      <div class="skin-desc">${s.desc}</div>
+      <div class="skin-price">${owned ? '' : (s.cost+' gold')}</div>
+    `;
+    const btn = document.createElement('button');
+    if(equipped){
+      btn.textContent = "Equipped";
+      btn.className = "small-btn equipped-tag";
+      btn.disabled = true;
+    } else if(owned){
+      btn.textContent = "Equip";
+      btn.className = "small-btn";
+      btn.onclick = ()=>{ save.equippedSkin = key; persist(); renderShop(); };
+    } else {
+      btn.textContent = "Buy";
+      btn.className = "small-btn";
+      btn.disabled = save.gold < s.cost;
+      btn.onclick = ()=>{
+        if(save.gold >= s.cost){
+          save.gold -= s.cost;
+          save.ownedSkins.push(key);
+          save.equippedSkin = key;
+          persist(); renderShop();
+        }
+      };
+    }
+    card.appendChild(btn);
+    grid.appendChild(card);
+  });
+
+  const list = document.getElementById('upgradeList');
+  list.innerHTML = "";
+  Object.keys(UPGRADE_DEFS).forEach(key=>{
+    const d = UPGRADE_DEFS[key];
+    const rank = save.upgrades[key];
+    const maxed = rank >= d.max;
+    const cost = maxed ? null : upgradeCost(key);
+    const row = document.createElement('div');
+    row.className = 'upgrade-row';
+    row.innerHTML = `
+      <div class="upgrade-info">
+        <div class="u-name">${d.name} — Rank ${rank}/${d.max}</div>
+        <div class="u-desc">${d.desc}</div>
+      </div>
+      <div class="upgrade-buy">
+        <div class="u-price">${maxed ? 'MAX' : cost+' gold'}</div>
+      </div>
+    `;
+    const btnWrap = row.querySelector('.upgrade-buy');
+    const btn = document.createElement('button');
+    btn.className = 'small-btn';
+    if(maxed){
+      btn.textContent = "Maxed";
+      btn.disabled = true;
+    } else {
+      btn.textContent = "Upgrade";
+      btn.disabled = save.gold < cost;
+      btn.onclick = ()=>{
+        if(save.gold >= cost){
+          save.gold -= cost;
+          save.upgrades[key]++;
+          persist(); renderShop();
+        }
+      };
+    }
+    btnWrap.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+// ---------- Input ----------
+const keys = {};
+window.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+
+// ---------- Touch joystick ----------
+const joystick = { x:0, y:0, active:false, touchId:null };
+const joyZone = document.getElementById('joystickZone');
+const joyBase = document.getElementById('joyBase');
+const joyKnob = document.getElementById('joyKnob');
+const JOY_RADIUS = 55;
+
+function joyReset(){
+  joystick.x = 0; joystick.y = 0; joystick.active = false; joystick.touchId = null;
+  joyKnob.style.transform = "translate(0px,0px)";
+  joyBase.style.display = "none";
+}
+
+function joyStart(clientX, clientY, id){
+  document.body.classList.add('touch-active');
+  const rect = joyZone.getBoundingClientRect();
+  // place the base centered on the initial touch point, clamped inside the zone
+  let bx = clientX - rect.left - 55;
+  let by = clientY - rect.top - 55;
+  bx = Math.max(0, Math.min(rect.width-110, bx));
+  by = Math.max(0, Math.min(rect.height-110, by));
+  joyBase.style.left = bx+"px";
+  joyBase.style.bottom = (rect.height - by - 110)+"px";
+  joyBase.style.display = "block";
+  joystick.active = true;
+  joystick.touchId = id;
+  joystick.baseClientX = bx + rect.left + 55;
+  joystick.baseClientY = by + rect.top + 55;
+  joyMove(clientX, clientY);
+}
+
+function joyMove(clientX, clientY){
+  if(!joystick.active) return;
+  let dx = clientX - joystick.baseClientX;
+  let dy = clientY - joystick.baseClientY;
+  const len = Math.hypot(dx,dy);
+  const clampedLen = Math.min(len, JOY_RADIUS);
+  const ang = Math.atan2(dy,dx);
+  const kx = Math.cos(ang)*clampedLen;
+  const ky = Math.sin(ang)*clampedLen;
+  joyKnob.style.transform = `translate(${kx}px,${ky}px)`;
+  const dead = 8;
+  if(len < dead){ joystick.x = 0; joystick.y = 0; }
+  else { joystick.x = kx / JOY_RADIUS; joystick.y = ky / JOY_RADIUS; }
+}
+
+joyZone.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if(joystick.active) return;
+  const t = e.changedTouches[0];
+  joyStart(t.clientX, t.clientY, t.identifier);
+}, {passive:false});
+
+joyZone.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier === joystick.touchId) joyMove(t.clientX, t.clientY);
+  }
+}, {passive:false});
+
+function joyEndHandler(e){
+  for(const t of e.changedTouches){
+    if(t.identifier === joystick.touchId) joyReset();
+  }
+}
+joyZone.addEventListener('touchend', joyEndHandler);
+joyZone.addEventListener('touchcancel', joyEndHandler);
+
+// Mouse fallback for touch-emulated / hybrid devices testing the joystick zone
+let mouseJoyActive = false;
+joyZone.addEventListener('mousedown', e=>{
+  mouseJoyActive = true;
+  joyStart(e.clientX, e.clientY, 'mouse');
+});
+window.addEventListener('mousemove', e=>{
+  if(mouseJoyActive) joyMove(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', ()=>{
+  if(mouseJoyActive){ mouseJoyActive = false; joyReset(); }
+});
+
+// ---------- Game constants ----------
+const WORLD_SIZE = 2000;
+const HARD_DEATH_TIME = 10.0; // absolute cap: nobody survives past this, guaranteed
+
+// ---------- Weapon definitions ----------
+function makeAutoPistol(){ return { type:'autopistol', level:1, cooldown:0.55, timer:0, damage:10, range:340 }; }
+function makeOrbit(){ return { type:'orbit', level:1, count:2, radius:70, angle:0, damage:8, speed:2.6 }; }
+function makeAoe(){ return { type:'aoe', level:1, cooldown:1.8, timer:0, damage:14, radius:110 }; }
+
+// ---------- Game state ----------
+let game = null;
+
+function newGame(){
+  const skinKey = save.equippedSkin;
+  const skin = SKINS[skinKey];
+  const baseHp = 100 * (1 + save.upgrades.hp*0.05) * skin.hpMult;
+  const baseMagnet = 90 * (1 + save.upgrades.magnet*0.08) * (skin.magnetMult||1);
+
+  game = {
+    t: 0,
+    running: true,
+    paused: false,
+    kills: 0,
+    goldRun: 0,
+    cam: { x: WORLD_SIZE/2, y: WORLD_SIZE/2 },
+    shake: 0,
+    spawnTimer: 0,
+    player: {
+      x: WORLD_SIZE/2, y: WORLD_SIZE/2,
+      radius: 16,
+      baseSpeed: 190 * skin.speedMult,
+      speedMult: 1,
+      maxHp: baseHp,
+      hp: baseHp,
+      regen: 0,
+      armor: 0,
+      magnet: baseMagnet,
+      powerMult: skin.powerMult,
+      critChance: skin.critBonus,
+      level: 1,
+      xp: 0,
+      xpToNext: 6,
+      color: skin.color,
+      icon: skin.icon,
+      weapons: [ makeAutoPistol() ],
+      hasOrbit:false, hasAoe:false,
+      hitFlash:0
+    },
+    enemies: [],
+    projectiles: [],
+    enemyProjectiles: [],
+    gems: [],
+    particles: [],
+    pendingLevelUps: 0
+  };
+}
+
+// ---------- Enemy templates ----------
+function spawnEnemy(kind){
+  const p = game.player;
+  const angle = Math.random()*Math.PI*2;
+  const dist = 520 + Math.random()*140;
+  let x = p.x + Math.cos(angle)*dist;
+  let y = p.y + Math.sin(angle)*dist;
+  x = Math.max(20, Math.min(WORLD_SIZE-20, x));
+  y = Math.max(20, Math.min(WORLD_SIZE-20, y));
+
+  const t = game.t;
+  const ramp = 1 + t*0.35; // enemies get tankier/faster as time passes
+
+  if(kind === 'small'){
+    game.enemies.push({ kind, x, y, radius:12, speed:95*ramp*0.55+70, hp:10, maxHp:10, damage:8, xp:2, color:"#5c7a3a" });
+  } else if(kind === 'big'){
+    game.enemies.push({ kind, x, y, radius:22, speed:38+ramp*4, hp:70*ramp*0.6+50, maxHp:70*ramp*0.6+50, damage:18, xp:6, color:"#3d3320" });
+  } else if(kind === 'crawler'){
+    game.enemies.push({ kind, x, y, radius:13, speed:60, hp:16, maxHp:16, damage:6, xp:4, color:"#6b4a7a", fireTimer: 1+Math.random(), preferredDist:220 });
+  }
+}
+
+function updateSpawning(dt){
+  const t = game.t;
+  game.spawnTimer -= dt;
+  // Interval shrinks aggressively — this is the rigged "Rift Surge" ramp.
+  const interval = Math.max(0.05, 0.9 * Math.exp(-t*0.42));
+  if(game.spawnTimer <= 0){
+    game.spawnTimer = interval;
+    // batch size grows with time too
+    const batch = 1 + Math.floor(t/2.2);
+    for(let i=0;i<batch;i++){
+      const roll = Math.random();
+      if(t > 3.5 && roll < 0.22) spawnEnemy('crawler');
+      else if(t > 2.2 && roll < 0.42) spawnEnemy('big');
+      else spawnEnemy('small');
+    }
+  }
+  // Guaranteed overwhelming final surge right before the hard cap
+  if(t > 7.5 && !game._surged){
+    game._surged = true;
+    for(let i=0;i<26;i++) spawnEnemy(Math.random()<0.3 ? 'big':'small');
+  }
+}
+
+// ---------- Upgrade pool for level-up cards ----------
+function buildCardPool(){
+  const p = game.player;
+  const pool = [];
+
+  if(!p.hasOrbit){
+    pool.push({ icon:"🌀", tag:"NEW WEAPON", title:"Orbiting Scythe", desc:"Blades circle you, damaging anything they touch.",
+      apply:()=>{ p.hasOrbit = true; p.weapons.push(makeOrbit()); } });
+  } else {
+    pool.push({ icon:"🌀", tag:"EVOLUTION", title:"Scythe +1", desc:"Adds another orbiting blade and more damage.",
+      apply:()=>{ const w = p.weapons.find(w=>w.type==='orbit'); w.level++; w.count++; w.damage*=1.25; } });
+  }
+
+  if(!p.hasAoe){
+    pool.push({ icon:"💥", tag:"NEW WEAPON", title:"AoE Blast", desc:"Periodic shockwave damages everything nearby.",
+      apply:()=>{ p.hasAoe = true; p.weapons.push(makeAoe()); } });
+  } else {
+    pool.push({ icon:"💥", tag:"EVOLUTION", title:"Blast +1", desc:"Bigger radius, faster recharge, more damage.",
+      apply:()=>{ const w = p.weapons.find(w=>w.type==='aoe'); w.level++; w.radius*=1.2; w.damage*=1.25; w.cooldown*=0.88; } });
+  }
+
+  const pistol = p.weapons.find(w=>w.type==='autopistol');
+  pool.push({ icon:"🔫", tag:"EVOLUTION", title:"Rapid Fire", desc:"+20% attack speed on your primary weapon.",
+    apply:()=>{ pistol.cooldown *= 0.8; } });
+
+  pool.push({ icon:"👟", tag:"STAT PASSIVE", title:"Swift Boots", desc:"+15% movement speed.",
+    apply:()=>{ p.speedMult *= 1.15; } });
+
+  pool.push({ icon:"❤️", tag:"STAT PASSIVE", title:"Thick Hide", desc:"+20% max HP, heals the difference.",
+    apply:()=>{ const gain = p.maxHp*0.2; p.maxHp += gain; p.hp += gain; } });
+
+  pool.push({ icon:"🩹", tag:"STAT PASSIVE", title:"Regeneration", desc:"Heal 1.5 HP per second.",
+    apply:()=>{ p.regen += 1.5; } });
+
+  pool.push({ icon:"🧲", tag:"STAT PASSIVE", title:"Wide Magnet", desc:"+30% gem pickup range.",
+    apply:()=>{ p.magnet *= 1.3; } });
+
+  pool.push({ icon:"🛡️", tag:"STAT PASSIVE", title:"Armor Plating", desc:"Reduce incoming damage slightly.",
+    apply:()=>{ p.armor += 2; } });
+
+  // shuffle & pick 3
+  for(let i=pool.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  return pool.slice(0,3);
+}
+
+function openLevelUp(){
+  game.paused = true;
+  const cards = buildCardPool();
+  const row = document.getElementById('cardRow');
+  row.innerHTML = "";
+  cards.forEach(c=>{
+    const el = document.createElement('div');
+    el.className = 'upgrade-card';
+    el.innerHTML = `
+      <div>
+        <div class="card-icon">${c.icon}</div>
+        <div class="card-tag">${c.tag}</div>
+        <div class="card-title">${c.title}</div>
+      </div>
+      <div class="card-desc">${c.desc}</div>
+    `;
+    el.onclick = ()=>{
+      c.apply();
+      showOnly(null);
+      hud.classList.remove('hidden');
+      game.paused = false;
+    };
+    row.appendChild(el);
+  });
+  showOnly(levelUpScreen);
+}
+
+// ---------- Update loop ----------
+let lastTime = performance.now();
+
+function dist2(x1,y1,x2,y2){ const dx=x1-x2, dy=y1-y2; return dx*dx+dy*dy; }
+
+function update(dt){
+  if(!game.running || game.paused) return;
+  game.t += dt;
+  const p = game.player;
+
+  // Hard guarantee: nobody survives the Rift past the cap.
+  if(game.t >= HARD_DEATH_TIME){
+    p.hp = 0;
+  }
+
+  // Movement
+  let mx=0,my=0;
+  if(keys['w']||keys['arrowup']) my -= 1;
+  if(keys['s']||keys['arrowdown']) my += 1;
+  if(keys['a']||keys['arrowleft']) mx -= 1;
+  if(keys['d']||keys['arrowright']) mx += 1;
+  if(mx===0 && my===0 && (joystick.x!==0||joystick.y!==0)){
+    mx = joystick.x; my = joystick.y;
+  }
+  if(mx!==0||my!==0){
+    const len = Math.hypot(mx,my);
+    mx/=len; my/=len;
+    const spd = p.baseSpeed * p.speedMult;
+    p.x = Math.max(p.radius, Math.min(WORLD_SIZE-p.radius, p.x + mx*spd*dt));
+    p.y = Math.max(p.radius, Math.min(WORLD_SIZE-p.radius, p.y + my*spd*dt));
+  }
+
+  if(p.regen>0) p.hp = Math.min(p.maxHp, p.hp + p.regen*dt);
+  if(p.hitFlash>0) p.hitFlash -= dt;
+
+  // Camera lerp
+  game.cam.x += (p.x - game.cam.x) * Math.min(1, dt*6);
+  game.cam.y += (p.y - game.cam.y) * Math.min(1, dt*6);
+  if(game.shake>0) game.shake = Math.max(0, game.shake - dt*4);
+
+  updateSpawning(dt);
+
+  // Enemies
+  for(const en of game.enemies){
+    if(en.kind === 'crawler'){
+      const d = Math.hypot(p.x-en.x, p.y-en.y);
+      if(d > en.preferredDist+10){
+        en.x += (p.x-en.x)/d*en.speed*dt;
+        en.y += (p.y-en.y)/d*en.speed*dt;
+      } else if(d < en.preferredDist-10){
+        en.x -= (p.x-en.x)/d*en.speed*dt;
+        en.y -= (p.y-en.y)/d*en.speed*dt;
+      }
+      en.fireTimer -= dt;
+      if(en.fireTimer<=0){
+        en.fireTimer = 1.6;
+        const ang = Math.atan2(p.y-en.y, p.x-en.x);
+        game.enemyProjectiles.push({ x:en.x,y:en.y, vx:Math.cos(ang)*140, vy:Math.sin(ang)*140, radius:6, damage:9, life:4 });
+      }
+    } else {
+      const d = Math.hypot(p.x-en.x, p.y-en.y) || 1;
+      en.x += (p.x-en.x)/d*en.speed*dt;
+      en.y += (p.y-en.y)/d*en.speed*dt;
+    }
+    // contact damage
+    const rr = (en.radius+p.radius);
+    if(dist2(p.x,p.y,en.x,en.y) < rr*rr){
+      const dmg = Math.max(1, en.damage - p.armor) * dt * 2.2;
+      p.hp -= dmg;
+      p.hitFlash = 0.15;
+      game.shake = Math.min(game.shake+0.15, 1);
+    }
+  }
+
+  // Enemy projectiles
+  for(const pr of game.enemyProjectiles){
+    pr.x += pr.vx*dt; pr.y += pr.vy*dt; pr.life -= dt;
+    if(dist2(pr.x,pr.y,p.x,p.y) < (pr.radius+p.radius)*(pr.radius+p.radius)){
+      p.hp -= Math.max(1, pr.damage-p.armor);
+      p.hitFlash = 0.15;
+      pr.life = 0;
+    }
+  }
+  game.enemyProjectiles = game.enemyProjectiles.filter(pr=>pr.life>0);
+
+  // Weapons
+  for(const w of p.weapons){
+    if(w.type==='autopistol'){
+      w.timer -= dt;
+      if(w.timer<=0){
+        let target=null, best=Infinity;
+        for(const en of game.enemies){
+          const d = dist2(p.x,p.y,en.x,en.y);
+          if(d < w.range*w.range && d < best){ best=d; target=en; }
+        }
+        if(target){
+          w.timer = w.cooldown;
+          const ang = Math.atan2(target.y-p.y, target.x-p.x);
+          game.projectiles.push({ x:p.x,y:p.y, vx:Math.cos(ang)*420, vy:Math.sin(ang)*420, radius:5, damage:w.damage*p.powerMult, life:1.2 });
+        }
+      }
+    } else if(w.type==='orbit'){
+      w.angle += dt*w.speed;
+      for(let i=0;i<w.count;i++){
+        const a = w.angle + (Math.PI*2/w.count)*i;
+        const bx = p.x + Math.cos(a)*w.radius;
+        const by = p.y + Math.sin(a)*w.radius;
+        for(const en of game.enemies){
+          if(dist2(bx,by,en.x,en.y) < (en.radius+10)*(en.radius+10)){
+            en.hp -= w.damage*p.powerMult*dt*4;
+          }
+        }
+      }
+    } else if(w.type==='aoe'){
+      w.timer -= dt;
+      if(w.timer<=0){
+        w.timer = w.cooldown;
+        game.particles.push({ x:p.x,y:p.y, r:0, maxR:w.radius, life:0.35, kind:'aoe' });
+        for(const en of game.enemies){
+          if(dist2(p.x,p.y,en.x,en.y) < w.radius*w.radius) en.hp -= w.damage*p.powerMult;
+        }
+      }
+    }
+  }
+
+  // player projectiles
+  for(const pr of game.projectiles){
+    pr.x += pr.vx*dt; pr.y += pr.vy*dt; pr.life -= dt;
+    for(const en of game.enemies){
+      if(pr.life>0 && dist2(pr.x,pr.y,en.x,en.y) < (pr.radius+en.radius)*(pr.radius+en.radius)){
+        let dmg = pr.damage;
+        if(Math.random() < p.critChance) dmg *= 2;
+        en.hp -= dmg;
+        pr.life = 0;
+      }
+    }
+  }
+  game.projectiles = game.projectiles.filter(pr=>pr.life>0);
+
+  // deaths -> gems
+  for(let i=game.enemies.length-1;i>=0;i--){
+    const en = game.enemies[i];
+    if(en.hp<=0){
+      game.kills++;
+      game.gems.push({ x:en.x, y:en.y, value:en.xp, radius:5 });
+      game.particles.push({ x:en.x,y:en.y, r:0, maxR:24, life:0.2, kind:'pop', color:en.color });
+      game.enemies.splice(i,1);
+    }
+  }
+
+  // gems
+  for(const g of game.gems){
+    const d = Math.hypot(p.x-g.x, p.y-g.y);
+    if(d < p.magnet){
+      const pull = d < 14 ? 999 : 260;
+      g.x += (p.x-g.x)/Math.max(d,1)*pull*dt;
+      g.y += (p.y-g.y)/Math.max(d,1)*pull*dt;
+    }
+    if(d < p.radius+8){ g._collected = g.value; }
+  }
+  for(let i=game.gems.length-1;i>=0;i--){
+    if(game.gems[i]._collected!==undefined){
+      p.xp += game.gems[i]._collected;
+      game.gems.splice(i,1);
+    }
+  }
+  while(p.xp >= p.xpToNext){
+    p.xp -= p.xpToNext;
+    p.level++;
+    p.xpToNext = Math.round(6 + p.level*4.5);
+    openLevelUp();
+    break; // one level-up card set at a time even on multi-level
+  }
+
+  // particles
+  for(const pt of game.particles){
+    pt.life -= dt;
+    if(pt.kind==='aoe') pt.r = pt.maxR * (1-pt.life/0.35);
+  }
+  game.particles = game.particles.filter(pt=>pt.life>0);
+
+  // gold accrual preview (final amount computed on death)
+  game.goldRun = Math.floor(game.t*8 + game.kills*2.2);
+
+  if(p.hp<=0){
+    endRun();
+  }
+}
+
+function endRun(){
+  game.running = false;
+  const earned = Math.floor(game.goldRun * (1 + save.upgrades.goldgain*0.10));
+  save.gold += earned;
+  if(game.t > save.bestTime) save.bestTime = game.t;
+  persist();
+
+  const taunts = [
+    "The Rift does not negotiate.",
+    "Ten seconds is generous, honestly.",
+    "You lasted longer than the last one. Barely.",
+    "Some rifts can be closed. This is not one of them.",
+    "Statistically, this was always going to happen.",
+    "Impressive. Still dead, though."
+  ];
+  document.getElementById('taunt').textContent = taunts[Math.floor(Math.random()*taunts.length)];
+  document.getElementById('finalTime').textContent = game.t.toFixed(1)+"s";
+  document.getElementById('finalGold').textContent = earned;
+  document.getElementById('finalBest').textContent = save.bestTime.toFixed(1)+"s";
+
+  hud.classList.add('hidden');
+  showOnly(gameOverScreen);
+}
+
+// ---------- Render ----------
+function drawWorld(){
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = "#0b0f0a";
+  ctx.fillRect(0,0,w,h);
+
+  ctx.save();
+  let shakeX=0, shakeY=0;
+  if(game.shake>0){ shakeX=(Math.random()-0.5)*game.shake*14; shakeY=(Math.random()-0.5)*game.shake*14; }
+  ctx.translate(w/2 - game.cam.x + shakeX, h/2 - game.cam.y + shakeY);
+
+  // tile grid
+  const tile = 64;
+  ctx.strokeStyle = "rgba(90,110,70,0.10)";
+  ctx.lineWidth = 1;
+  const startX = Math.floor((game.cam.x - w) / tile) * tile;
+  const startY = Math.floor((game.cam.y - h) / tile) * tile;
+  for(let x=startX; x<game.cam.x+w; x+=tile){
+    ctx.beginPath(); ctx.moveTo(x,game.cam.y-h); ctx.lineTo(x,game.cam.y+h); ctx.stroke();
+  }
+  for(let y=startY; y<game.cam.y+h; y+=tile){
+    ctx.beginPath(); ctx.moveTo(game.cam.x-w,y); ctx.lineTo(game.cam.x+w,y); ctx.stroke();
+  }
+
+  // world bounds
+  ctx.strokeStyle = "#3a2a20";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(0,0,WORLD_SIZE,WORLD_SIZE);
+
+  // gems
+  for(const g of game.gems){
+    ctx.fillStyle = "#7fd67a";
+    ctx.beginPath(); ctx.arc(g.x,g.y,g.radius,0,Math.PI*2); ctx.fill();
+  }
+
+  // enemies
+  for(const en of game.enemies){
+    ctx.fillStyle = en.color;
+    ctx.beginPath(); ctx.arc(en.x,en.y,en.radius,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 1.5; ctx.stroke();
+    // hp sliver for big ones
+    if(en.kind==='big'){
+      const pct = en.hp/en.maxHp;
+      ctx.fillStyle="#000"; ctx.fillRect(en.x-en.radius,en.y-en.radius-8,en.radius*2,4);
+      ctx.fillStyle="#b6231f"; ctx.fillRect(en.x-en.radius,en.y-en.radius-8,en.radius*2*Math.max(0,pct),4);
+    }
+  }
+
+  // enemy projectiles
+  ctx.fillStyle = "#c96bd6";
+  for(const pr of game.enemyProjectiles){
+    ctx.beginPath(); ctx.arc(pr.x,pr.y,pr.radius,0,Math.PI*2); ctx.fill();
+  }
+
+  // player projectiles
+  ctx.fillStyle = "#f2e08c";
+  for(const pr of game.projectiles){
+    ctx.beginPath(); ctx.arc(pr.x,pr.y,pr.radius,0,Math.PI*2); ctx.fill();
+  }
+
+  // particles
+  for(const pt of game.particles){
+    if(pt.kind==='aoe'){
+      ctx.strokeStyle = "rgba(200,220,120,0.6)";
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2); ctx.stroke();
+    } else if(pt.kind==='pop'){
+      ctx.fillStyle = pt.color;
+      ctx.globalAlpha = Math.max(0,pt.life/0.2);
+      ctx.beginPath(); ctx.arc(pt.x,pt.y, (1-pt.life/0.2)*14, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  const p = game.player;
+  // orbit blades
+  const orbit = p.weapons.find(w=>w.type==='orbit');
+  if(orbit){
+    for(let i=0;i<orbit.count;i++){
+      const a = orbit.angle + (Math.PI*2/orbit.count)*i;
+      const bx = p.x + Math.cos(a)*orbit.radius;
+      const by = p.y + Math.sin(a)*orbit.radius;
+      ctx.fillStyle = "#d8d8d8";
+      ctx.beginPath(); ctx.arc(bx,by,9,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  // player
+  ctx.fillStyle = p.hitFlash>0 ? "#ffffff" : p.color;
+  ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle="#000"; ctx.lineWidth=2; ctx.stroke();
+  ctx.font = "16px sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(p.icon, p.x, p.y-1);
+
+  ctx.restore();
+}
+
+function updateHUD(){
+  const p = game.player;
+  const timerEl = document.getElementById('timerBox');
+  timerEl.textContent = game.t.toFixed(1)+"s";
+  timerEl.classList.toggle('danger', game.t >= 7.5);
+  document.getElementById('goldRun').textContent = "Gold this run: "+game.goldRun;
+  document.getElementById('levelBadgeTop').textContent = "Lv."+p.level;
+  document.getElementById('hpLabel').textContent = `HP: ${Math.max(0,Math.ceil(p.hp))} / ${Math.ceil(p.maxHp)}`;
+  document.getElementById('hpFill').style.width = Math.max(0,(p.hp/p.maxHp*100))+"%";
+  document.getElementById('xpLabel').textContent = `XP: ${Math.floor(p.xp)} / ${p.xpToNext}`;
+  document.getElementById('xpFill').style.width = (p.xp/p.xpToNext*100)+"%";
+}
+
+function loop(now){
+  const dt = Math.min(0.05, (now-lastTime)/1000);
+  lastTime = now;
+  if(game && game.running){
+    update(dt);
+    drawWorld();
+    updateHUD();
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ---------- Screen wiring ----------
+function goMenu(){
+  showOnly(menuScreen);
+  hud.classList.add('hidden');
+  refreshMenu();
+}
+function goShop(){
+  showOnly(shopScreen);
+  hud.classList.add('hidden');
+  renderShop();
+}
+function startRun(){
+  newGame();
+  showOnly(null);
+  hud.classList.remove('hidden');
+}
+
+document.getElementById('btnPlay').onclick = startRun;
+document.getElementById('btnShop').onclick = goShop;
+document.getElementById('btnBackMenu').onclick = goMenu;
+document.getElementById('btnRetry').onclick = startRun;
+document.getElementById('btnShop2').onclick = goShop;
+document.getElementById('btnMenu2').onclick = goMenu;
+
+goMenu();
+
+})();
+</script>
+</body>
+</html>
